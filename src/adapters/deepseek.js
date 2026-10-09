@@ -46,6 +46,11 @@ class DeepseekAdapter extends BaseModelAdapter {
     };
   }
 
+  /** 列模型（契约 §2）：GET {base}/models，解析 data[].id。 */
+  async listModels(opts = {}) {
+    return this._openAIListModels({ ...opts, defaultBase: this.defaultBase });
+  }
+
   /**
    * 内部 ChatRequest -> { url, headers, body }。
    * 约定：聊天核心已注入 req.apiKey；可选 req.baseUrl 覆盖默认。

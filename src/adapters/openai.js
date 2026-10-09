@@ -59,6 +59,14 @@ class OpenAIAdapter extends BaseModelAdapter {
   }
 
   /**
+   * 列模型（契约 §2）：GET {base}/models（Bearer），解析 data[].id。
+   * 404/405/401/网络错误一律优雅降级为 {supported:false}，不抛错。
+   */
+  async listModels(opts = {}) {
+    return this._openAIListModels({ ...opts, defaultBase: this.defaultBase });
+  }
+
+  /**
    * 内部 ChatRequest -> { url, headers, body }。
    * 约定：聊天核心在调用前已把解密后的凭证注入 req.apiKey，
    * 并按需注入 req.baseUrl（用户自定义 Base URL 覆盖默认值）。

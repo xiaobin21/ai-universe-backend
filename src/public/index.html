@@ -399,6 +399,20 @@ textarea.input{resize:none;line-height:1.5}
       <div class="list-row"><div class="grow" style="font-weight:600;font-size:14px">深色模式</div><div class="switch" id="dark-switch"></div></div>
     </div>
 
+    <!-- 管理员区（仅管理员可见：调用 /api/admin/catalog/status 403 时自动隐藏，普通用户不报错） -->
+    <div class="section-label" id="admin-section-label" style="display:none">管理员 · 动态模型目录</div>
+    <div class="card" id="admin-panel" style="margin:0 16px;display:none;border-radius:16px;overflow:hidden">
+      <div style="padding:14px 16px 4px;display:flex;gap:10px">
+        <button class="btn btn-primary" id="admin-sync" style="flex:1">立即同步模型目录</button>
+        <button class="btn btn-ghost" id="admin-probe" style="flex:1">立即探测</button>
+      </div>
+      <div class="help" id="admin-status" style="padding:8px 16px 4px">正在加载目录状态…</div>
+      <div class="section-label" style="padding:10px 16px 6px">新发现 · 能力待验证</div>
+      <div id="admin-discovered"></div>
+      <div class="section-label" style="padding:6px 16px 6px">已停用 / 退役</div>
+      <div id="admin-deprecated"></div>
+    </div>
+
     <div class="section-label">账号</div>
     <div class="card" style="margin:0 16px;border-radius:16px;overflow:hidden">
       <div class="list-row"><div class="grow" style="font-weight:600;font-size:14px" id="settings-email">—</div><span class="pill pill-gray" id="settings-tier">free</span></div>
@@ -458,6 +472,40 @@ textarea.input{resize:none;line-height:1.5}
   </div>
 </div>
 
+<!-- ===== 弹层：管理员编辑模型 ===== -->
+<div class="overlay" id="model-edit-overlay">
+  <div class="sheet">
+    <div class="sheet-grab"></div>
+    <div class="sheet-title" id="model-edit-title">编辑模型</div>
+    <div class="sheet-body">
+      <label class="field-label">显示名称</label>
+      <input class="input" id="med-name" placeholder="模型名称">
+      <div style="height:12px"></div>
+      <label class="field-label">上下文窗口（contextWindow）</label>
+      <input class="input mono" id="med-ctx" inputmode="numeric" placeholder="如 128000">
+      <div style="height:12px"></div>
+      <label class="field-label">最大输出 Tokens（maxOutputTokens）</label>
+      <input class="input mono" id="med-out" inputmode="numeric" placeholder="如 16384">
+      <div style="height:12px"></div>
+      <label class="field-label">能力勾选（保存即视为人工验证）</label>
+      <label style="display:flex;gap:8px;align-items:center;padding:5px 0;font-size:14px"><input type="checkbox" id="med-vision"> 支持视觉（vision）</label>
+      <label style="display:flex;gap:8px;align-items:center;padding:5px 0;font-size:14px"><input type="checkbox" id="med-think"> 支持思考链（thinking）</label>
+      <div style="height:12px"></div>
+      <label class="field-label">输入价格（元 / 百万 token，留空=未知）</label>
+      <input class="input mono" id="med-inprice" inputmode="decimal" placeholder="留空表示价格未知，不会记为 0">
+      <div style="height:12px"></div>
+      <label class="field-label">输出价格（元 / 百万 token）</label>
+      <input class="input mono" id="med-outprice" inputmode="decimal" placeholder="与输入价格需同时填写">
+      <div class="help">价格留空保持「未知」；用量照常记 token，成本待补价后核算。保存会把能力标记为已验证。</div>
+      <div style="height:16px"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" id="med-toggle" style="flex:1"></button>
+        <button class="btn btn-primary" id="med-save" style="flex:2">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 </div>
 <script>
@@ -497,6 +545,10 @@ let conversations=[]; // [{id,title,modelId,updatedAt,lastSnippet}]
 let currentConv=null; // {id,title,modelId,messages:[...]}
 let credentialsList=[];
 let authMode='login'; // 'login' | 'register'
+// 动态目录（管理员区）：adminStatus 来自 /api/admin/catalog/status；非管理员接口 403 时为 null（隐藏该区）
+let adminStatus=null;
+let catalogAll={models:[]}; // 管理员视角目录（含 deprecated），编辑模型时用
+let editingModelId=null;
 
 /* ==================== 工具函数 ==================== */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -750,8 +802,9 @@ function bodyContent(msg){
   if(msg.status==='interrupted'){body+='<div class="msg-err" style="background:var(--amber-soft);color:var(--amber)"><span>连接中断，结果未确认</span></div><button class="retry-link" onclick="retryMessage(\''+msg.id+'\')">检查并重试</button>'}
   if(!running&&msg.usage){
     const total=(msg.usage.promptTokens||0)+(msg.usage.completionTokens||0);
-    const cost=msg.usage.costMicro||0;
-    body+='<div class="msg-meta mono">'+total+' tok · '+fmtMoney(cost)+'</div>';
+    // costMicro 为 null = 成本未知（discovered 模型未补价），绝不显示 ¥0
+    const costStr=(msg.usage.costMicro==null)?'费用未知':fmtMoney(msg.usage.costMicro);
+    body+='<div class="msg-meta mono">'+total+' tok · '+costStr+'</div>';
   }
   return body;
 }
@@ -786,8 +839,10 @@ const ROUTING_INFO=[
 function renderModels(){
   document.getElementById('routing-modes').innerHTML=ROUTING_INFO.map(r=>
     '<button class="routing-mode '+(settings.routingMode===r.k?'on':'')+'" onclick="setRouting(\''+r.k+'\')">'+r.name+'<small>'+r.d+'</small></button>').join('');
+  // deprecated/hidden 不在普通选择器出现（后端已默认过滤，前端再兜一层）
+  const visible=catalog.models.filter(m=>!m.lifecycle||m.lifecycle==='active');
   const groups={};
-  catalog.models.forEach(m=>{(groups[m.provider]=groups[m.provider]||[]).push(m)});
+  visible.forEach(m=>{(groups[m.provider]=groups[m.provider]||[]).push(m)});
   let html='';
   Object.keys(groups).forEach(p=>{
     const prov=getProvider(p);
@@ -795,13 +850,22 @@ function renderModels(){
     html+=groups[p].map(m=>{
       const caps=m.capabilities||{};
       const badges=[];
+      // 新发现且能力未验证：角标提示
+      if(m.source==='discovered'&&!m.capabilitiesVerified)badges.push('<span class="pill pill-amber">新发现·能力待验证</span>');
       if(caps.supportsVision)badges.push('<span class="pill pill-teal">视觉</span>');
       if(caps.supportsThinking)badges.push('<span class="pill pill-violet">思考链</span>');
       if(caps.supportsTools)badges.push('<span class="pill pill-gray">工具调用</span>');
       if(caps.supportsStructuredOutput)badges.push('<span class="pill pill-gray">结构化</span>');
-      const inPrice=m.pricing?(m.pricing.inputMicroPerMtok/1e6).toFixed(2):'—';
-      const outPrice=m.pricing?(m.pricing.outputMicroPerMtok/1e6).toFixed(2):'—';
-      return '<div class="model-card '+(settings.defaultModelId===m.id?'selected':'')+'" onclick="selectDefaultModel(\''+m.id+'\')"><div class="model-card-top"><div class="model-name">'+esc(m.displayName)+'</div><div class="radio"></div></div><div class="model-badges">'+badges.join('')+'</div><div class="model-spec mono"><span>上下文 '+fmtCtx(caps.contextWindow||0)+'</span><span>输入 ¥'+inPrice+'/M</span><span>输出 ¥'+outPrice+'/M</span></div></div>';
+      // 价格：null = 未知，绝不显示 ¥0 或假价
+      let priceSpec;
+      if(m.pricing){
+        const inPrice=(m.pricing.inputMicroPerMtok/1e6).toFixed(2);
+        const outPrice=(m.pricing.outputMicroPerMtok/1e6).toFixed(2);
+        priceSpec='<span>输入 ¥'+inPrice+'/M</span><span>输出 ¥'+outPrice+'/M</span>';
+      }else{
+        priceSpec='<span class="pill pill-amber">价格待补充</span><span>费用 未知</span>';
+      }
+      return '<div class="model-card '+(settings.defaultModelId===m.id?'selected':'')+'" onclick="selectDefaultModel(\''+m.id+'\')"><div class="model-card-top"><div class="model-name">'+esc(m.displayName)+'</div><div class="radio"></div></div><div class="model-badges">'+badges.join('')+'</div><div class="model-spec mono"><span>上下文 '+fmtCtx(caps.contextWindow||0)+'</span>'+priceSpec+'</div></div>';
     }).join('');
   });
   document.getElementById('model-list').innerHTML=html;
@@ -854,9 +918,10 @@ function usageBars(arr,isModel){
 
 /* ==================== 渲染：设置页 ==================== */
 async function renderSettings(){
-  // 凭证列表
+  // 凭证列表（/credentials 返回 {credentials:[...]}，兼容直连数组）
   try{
-    credentialsList=await apiJson('/credentials');
+    const credResp=await apiJson('/credentials');
+    credentialsList=Array.isArray(credResp)?credResp:(credResp.credentials||[]);
   }catch(e){credentialsList=[]}
   document.getElementById('provider-keys').innerHTML=credentialsList.map(c=>{
     const prov=getProvider(c.provider);
@@ -873,13 +938,173 @@ async function renderSettings(){
     document.getElementById('settings-email').textContent=auth.user.email||'—';
     document.getElementById('settings-tier').textContent=auth.user.tier||'free';
   }
+  // 管理员区：非管理员调 status 会 403，loadAdminStatus 内部静默隐藏、不报错
+  loadAdminStatus();
+}
+
+/* ==================== 管理员：动态目录（sync/probe/status/PATCH） ==================== */
+let adminRetryScheduled=false;
+async function loadAdminStatus(){
+  let st=null;
+  try{
+    st=await apiJson('/admin/catalog/status');
+  }catch(e){
+    // 仅 403（确证非管理员）才隐藏面板；引导期 401/网络异常不隐藏，短延迟自动重试一次
+    if(e && e.status===403){
+      adminStatus=null;
+      document.getElementById('admin-panel').style.display='none';
+      document.getElementById('admin-section-label').style.display='none';
+      return;
+    }
+    if(!adminRetryScheduled){
+      adminRetryScheduled=true;
+      setTimeout(()=>{adminRetryScheduled=false;loadAdminStatus().catch(()=>{})},1500);
+    }
+    return;
+  }
+  // 数据加载成功 → 面板保持可见（渲染异常不得再次隐藏）
+  adminStatus=st;
+  document.getElementById('admin-panel').style.display='';
+  document.getElementById('admin-section-label').style.display='';
+  // 管理员视角目录（补价/编辑用）；失败不影响面板
+  try{
+    catalogAll=await apiJson('/catalog?include_deprecated=true');
+  }catch(_){ catalogAll={models:[]}; }
+  // 渲染单独兜底：失败时保留按钮与最小内容，绝不再隐藏已加载成功的面板
+  try{
+    renderAdminPanel();
+  }catch(renderErr){
+    try{
+      document.getElementById('admin-status').textContent='目录状态渲染失败，可点击上方按钮重试';
+      document.getElementById('admin-discovered').innerHTML='';
+      document.getElementById('admin-deprecated').innerHTML='';
+    }catch(_){}
+  }
+}
+function renderAdminPanel(){
+  const st=adminStatus||{};
+  let line='';
+  if(st.lastDiscovery){
+    const t=st.lastDiscovery.totals||{};
+    line+='最近同步：'+(timeAgo(st.lastDiscovery.ranAt)||'—')+'（新增 '+(t.added||0)+' · 停用 '+(t.markedDeprecated||0)+'）';
+  }else{
+    line='尚未同步过模型目录';
+  }
+  if(st.lastProbe){
+    const t=st.lastProbe.totals||{};
+    line+='　最近探测：'+(timeAgo(st.lastProbe.ranAt)||'—')+'（停用 '+(t.deprecated||0)+'）';
+  }
+  document.getElementById('admin-status').textContent=line;
+
+  const disc=st.discovered||[];
+  document.getElementById('admin-discovered').innerHTML=disc.length
+    ? disc.map(adminModelRow).join('')
+    : '<div class="help" style="padding:6px 16px 12px">暂无新发现模型</div>';
+  const dep=st.deprecated||[];
+  document.getElementById('admin-deprecated').innerHTML=dep.length
+    ? dep.map(adminDepRow).join('')
+    : '<div class="help" style="padding:6px 16px 12px">暂无已停用模型</div>';
+}
+function adminModelRow(m){
+  const priceBadge=m.pricing
+    ? ''
+    : '<span class="pill pill-amber">价格待补充</span>';
+  const active=(!m.lifecycle||m.lifecycle==='active');
+  const toggleLabel=active?'停用':'启用';
+  const toggleTo=active?'deprecated':'active';
+  return '<div class="list-row"><div class="grow" style="min-width:0"><div style="font-weight:600;font-size:14px">'+esc(m.displayName||m.slug)+'</div><div class="help" style="margin-top:2px">'+esc(m.provider)+' · '+esc(m.slug)+(m.capabilitiesVerified?'':' · 能力未验证')+'</div></div>'+priceBadge+'<button class="btn btn-ghost" style="min-height:36px;padding:0 12px" onclick="openModelEdit(\''+m.id+'\')">编辑</button><button class="btn btn-ghost" style="min-height:36px;padding:0 12px" '+(active?'style="color:var(--danger)"':'')+' onclick="toggleModelLifecycle(\''+m.id+'\',\''+toggleTo+'\')">'+toggleLabel+'</button></div>';
+}
+function adminDepRow(m){
+  return '<div class="list-row"><div class="grow" style="min-width:0"><div style="font-weight:600;font-size:14px">'+esc(m.displayName||m.slug)+'</div><div class="help" style="margin-top:2px">'+esc(m.provider)+' · '+esc(m.slug)+(m.deprecationReason?' · '+esc(m.deprecationReason):'')+'</div></div><button class="btn btn-ghost" style="min-height:36px;padding:0 12px" onclick="openModelEdit(\''+m.id+'\')">编辑</button><button class="btn btn-primary" style="min-height:36px;padding:0 12px" onclick="toggleModelLifecycle(\''+m.id+'\',\'active\')">启用</button></div>';
+}
+async function adminSync(){
+  const btn=document.getElementById('admin-sync');
+  btn.disabled=true;btn.textContent='同步中…';
+  try{
+    const r=await apiJson('/admin/catalog/sync',{method:'POST'});
+    const t=(r&&r.totals)||{};
+    toast('同步完成：新增 '+(t.added||0)+'，停用 '+(t.markedDeprecated||0));
+    await Promise.all([loadCatalog(),loadAdminStatus()]);
+  }catch(e){toast(e.message||'同步失败')}
+  finally{btn.disabled=false;btn.textContent='立即同步模型目录'}
+}
+async function adminProbe(){
+  const btn=document.getElementById('admin-probe');
+  btn.disabled=true;btn.textContent='探测中…';
+  try{
+    const r=await apiJson('/admin/catalog/probe',{method:'POST'});
+    const t=(r&&r.totals)||{};
+    toast('探测完成：停用 '+(t.deprecated||0)+'，保持可用 '+(t.keptActive||0));
+    await loadAdminStatus();
+  }catch(e){toast(e.message||'探测失败')}
+  finally{btn.disabled=false;btn.textContent='立即探测'}
+}
+async function toggleModelLifecycle(id,lifecycle){
+  try{
+    await apiJson('/admin/models/'+id,{method:'PATCH',body:{lifecycle:lifecycle}});
+    toast(lifecycle==='active'?'已启用':'已停用');
+    await Promise.all([loadCatalog(),loadAdminStatus()]);
+  }catch(e){toast(e.message||'操作失败')}
+}
+function openModelEdit(id){
+  editingModelId=id;
+  const m=(catalogAll.models||[]).find(x=>x.id===id)||{};
+  const caps=m.capabilities||{};
+  document.getElementById('model-edit-title').textContent='编辑：'+(m.displayName||m.slug||id);
+  document.getElementById('med-name').value=m.displayName||'';
+  document.getElementById('med-ctx').value=caps.contextWindow||'';
+  document.getElementById('med-out').value=caps.maxOutputTokens||'';
+  document.getElementById('med-vision').checked=!!caps.supportsVision;
+  document.getElementById('med-think').checked=!!caps.supportsThinking;
+  document.getElementById('med-inprice').value=m.pricing?(m.pricing.inputMicroPerMtok/1e6):'';
+  document.getElementById('med-outprice').value=m.pricing?(m.pricing.outputMicroPerMtok/1e6):'';
+  const on=(!m.lifecycle||m.lifecycle==='active');
+  const tgl=document.getElementById('med-toggle');
+  tgl.textContent=on?'停用':'启用';
+  tgl.dataset.to=on?'deprecated':'active';
+  document.getElementById('model-edit-overlay').classList.add('open');
+}
+async function saveModelEdit(){
+  const id=editingModelId;if(!id)return;
+  const body={capabilitiesVerified:true};
+  const name=document.getElementById('med-name').value.trim();
+  if(name)body.displayName=name;
+  const ctx=parseInt(document.getElementById('med-ctx').value);
+  if(!isNaN(ctx)&&ctx>0)body.contextWindow=ctx;
+  const out=parseInt(document.getElementById('med-out').value);
+  if(!isNaN(out)&&out>0)body.maxOutputTokens=out;
+  body.capabilities={supportsVision:document.getElementById('med-vision').checked,supportsThinking:document.getElementById('med-think').checked};
+  const inP=document.getElementById('med-inprice').value.trim();
+  const outP=document.getElementById('med-outprice').value.trim();
+  if(inP!==''||outP!==''){
+    const iv=parseFloat(inP),ov=parseFloat(outP);
+    if(isNaN(iv)||isNaN(ov)){toast('请同时填写输入与输出价格，或都留空');return}
+    body.pricing={inputMicroPerMtok:Math.round(iv*1e6),outputMicroPerMtok:Math.round(ov*1e6),currency:'CNY'};
+  }
+  try{
+    await apiJson('/admin/models/'+id,{method:'PATCH',body:body});
+    closeSheets();toast('已保存');
+    await Promise.all([loadCatalog(),loadAdminStatus()]);
+  }catch(e){toast(e.message||'保存失败')}
+}
+async function medToggleLifecycle(){
+  const id=editingModelId;if(!id)return;
+  const to=document.getElementById('med-toggle').dataset.to||'active';
+  try{
+    await apiJson('/admin/models/'+id,{method:'PATCH',body:{lifecycle:to}});
+    toast(to==='active'?'已启用':'已停用');
+    closeSheets();
+    await Promise.all([loadCatalog(),loadAdminStatus()]);
+  }catch(e){toast(e.message||'操作失败')}
 }
 
 /* ==================== 弹层：模型选择 / 密钥 ==================== */
 function openModelSheet(){
   document.getElementById('sheet-title').textContent='选择模型';
+  // 隐藏 deprecated/hidden（后端默认已过滤，前端兜底）
+  const visible=catalog.models.filter(m=>!m.lifecycle||m.lifecycle==='active');
   const groups={};
-  catalog.models.forEach(m=>{(groups[m.provider]=groups[m.provider]||[]).push(m)});
+  visible.forEach(m=>{(groups[m.provider]=groups[m.provider]||[]).push(m)});
   let html='';
   Object.keys(groups).forEach(p=>{
     const prov=getProvider(p);
@@ -888,7 +1113,10 @@ function openModelSheet(){
       const cred=credentialsList.find(c=>c.provider===p);
       const ready=cred&&cred.configured;
       const caps=m.capabilities||{};
-      return '<button class="sheet-item" onclick="pickModelForChat(\''+m.id+'\')"><div class="grow"><div class="t">'+esc(m.displayName)+'</div><div class="s">'+(ready?'可调用':'未配置密钥 · 可演示')+' · '+fmtCtx(caps.contextWindow||0)+'</div></div>'+(currentConv&&currentConv.modelId===m.id?'<span class="check">'+ICONS.check+'</span>':'')+'</button>';
+      let line=(ready?'可调用':'未配置密钥 · 可演示')+' · '+fmtCtx(caps.contextWindow||0);
+      if(m.source==='discovered'&&!m.capabilitiesVerified)line+=' · 待验证';
+      if(!m.pricing)line+=' · 价格未知';
+      return '<button class="sheet-item" onclick="pickModelForChat(\''+m.id+'\')"><div class="grow"><div class="t">'+esc(m.displayName)+'</div><div class="s">'+line+'</div></div>'+(currentConv&&currentConv.modelId===m.id?'<span class="check">'+ICONS.check+'</span>':'')+'</button>';
     }).join('');
   });
   document.getElementById('sheet-body').innerHTML=html;
@@ -1106,7 +1334,8 @@ function handleSseEvent(type,data,asstMsg,conv,controller){
       break;
     case 'done':
       asstMsg.status='completed';
-      asstMsg.usage={promptTokens:data.promptTokens||0,completionTokens:data.completionTokens||0,costMicro:data.costMicro||0};
+      // costMicro 可能为 null（价格未知），保留 null，不兜底为 0
+      asstMsg.usage={promptTokens:data.promptTokens||0,completionTokens:data.completionTokens||0,costMicro:data.costMicro==null?null:data.costMicro};
       break;
     case 'error':
       asstMsg.status='failed';
@@ -1114,7 +1343,7 @@ function handleSseEvent(type,data,asstMsg,conv,controller){
       break;
     case 'cancelled':
       asstMsg.status='cancelled';
-      asstMsg.usage={promptTokens:data.promptTokens||0,completionTokens:data.completionTokens||0,costMicro:data.costMicro||0};
+      asstMsg.usage={promptTokens:data.promptTokens||0,completionTokens:data.completionTokens||0,costMicro:data.costMicro==null?null:data.costMicro};
       break;
   }
 }
@@ -1343,6 +1572,11 @@ function bind(){
     try{await apiJson('/settings',{method:'PATCH',body:{maxOutputTokens:settings.maxOutputTokens}})}catch(e){}
   });
   document.getElementById('dark-switch').addEventListener('click',toggleTheme);
+  // 管理员：动态目录同步 / 探测 / 模型编辑
+  document.getElementById('admin-sync').addEventListener('click',adminSync);
+  document.getElementById('admin-probe').addEventListener('click',adminProbe);
+  document.getElementById('med-save').addEventListener('click',saveModelEdit);
+  document.getElementById('med-toggle').addEventListener('click',medToggleLifecycle);
   // 确认框
   document.getElementById('confirm-cancel').addEventListener('click',closeSheets);
   document.getElementById('confirm-ok').addEventListener('click',()=>{const cb=confirmCb;closeSheets();if(cb)cb()});

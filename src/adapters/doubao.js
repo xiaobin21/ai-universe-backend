@@ -43,6 +43,11 @@ class DoubaoAdapter extends BaseModelAdapter {
     };
   }
 
+  /** 列模型（契约 §2）：GET {base}/models，解析 data[].id。 */
+  async listModels(opts = {}) {
+    return this._openAIListModels({ ...opts, defaultBase: DEFAULT_BASE_URL });
+  }
+
   /**
    * ChatRequest -> { url, headers, body }
    * req.apiKey: 用户解密后的豆包 API Key（核心注入）

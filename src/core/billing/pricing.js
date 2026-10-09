@@ -44,4 +44,32 @@ async function getPricing(provider, model, at = new Date()) {
   };
 }
 
-module.exports = { getPricing };
+/**
+ * 非抛出版取价：无当前价时返回 null（成本未知），绝不伪造/写 0。
+ * 供计费层在「管理员补价前」使用（discovered/manual 模型尚无 pricing_versions）。
+ */
+async function getPricingOrNull(provider, model, at = new Date()) {
+  const ts = at instanceof Date ? at : new Date(at);
+  const { rows } = await query(
+    `SELECT input_price_micro_per_mtok AS "inputMicroPerMtok",
+            output_price_micro_per_mtok AS "outputMicroPerMtok",
+            currency
+       FROM pricing_versions
+      WHERE provider = $1
+        AND model    = $2
+        AND effective_from <= $3
+        AND (effective_to IS NULL OR effective_to > $3)
+      ORDER BY effective_from DESC
+      LIMIT 1`,
+    [provider, model, ts]
+  );
+  if (!rows.length) return null;
+  const r = rows[0];
+  return {
+    inputMicroPerMtok: Number(r.inputMicroPerMtok),
+    outputMicroPerMtok: Number(r.outputMicroPerMtok),
+    currency: r.currency || 'CNY',
+  };
+}
+
+module.exports = { getPricing, getPricingOrNull };

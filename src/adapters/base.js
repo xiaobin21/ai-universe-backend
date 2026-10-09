@@ -7,6 +7,40 @@
  */
 
 const { AppError } = require('../core/errors');
+const { safeFetch } = require('../transport/httpClient');
+
+/**
+ * 读取响应体为文本。生产 safeFetch 返回 {status, body, raw(undici Response)}；
+ * 测试可注入 transport 直接返回 {status, raw:{text()}}。两种形态都兼容。
+ */
+async function readResText(res) {
+  if (!res) return '';
+  try {
+    if (res.raw && typeof res.raw.text === 'function') return await res.raw.text();
+    const body = res.body;
+    if (body && typeof body === 'object') {
+      if (typeof body.getReader === 'function') {
+        const reader = body.getReader();
+        const chunks = [];
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) chunks.push(Buffer.from(value));
+        }
+        return Buffer.concat(chunks).toString('utf8');
+      }
+      if (typeof body.on === 'function') {
+        return await new Promise((resolve, reject) => {
+          const parts = [];
+          body.on('data', (d) => parts.push(d));
+          body.on('end', () => resolve(Buffer.concat(parts).toString('utf8')));
+          body.on('error', reject);
+        });
+      }
+    }
+  } catch { /* 读取失败按空文本处理，由上层 JSON.parse 失败优雅降级 */ }
+  return '';
+}
 
 class BaseModelAdapter {
   constructor() {
@@ -61,6 +95,87 @@ class BaseModelAdapter {
   // eslint-disable-next-line no-unused-vars
   extractUsage(payload) {
     return null;
+  }
+
+  // ---------------- 可选能力：列模型（契约 §2） ----------------
+
+  /**
+   * 列模型（可选能力，默认不支持）。子类按需覆盖。
+   * @param {{apiKey:string, baseUrl?:string, timeoutMs?:number, signal?:AbortSignal,
+   *          transport?:Function}} [opts]
+   *   transport 仅供测试注入；生产默认走统一 safeFetch（超时/取消/错误映射/SSRF）。
+   * @returns {Promise<{supported:true,models:string[]} |
+   *          {supported:false,reason:'unsupported'|'no_credential'|'not_found'|'auth'|'network',status?:number|null,error?:string}>}
+   */
+  // eslint-disable-next-line no-unused-vars
+  async listModels(opts = {}) {
+    return { supported: false, reason: 'unsupported' };
+  }
+
+  /**
+   * 内部：发一个 GET 列模型请求并取文本（统一超时/取消/错误映射，不重试）。
+   * 网络/超时/取消在这里不抛出，交由 _openAIListModels 等捕获后优雅降级。
+   */
+  async _doListRequest(url, { headers = {}, timeoutMs, signal, transport } = {}) {
+    const doFetch = transport || safeFetch;
+    const res = await doFetch(url, {
+      method: 'GET',
+      headers,
+      timeoutMs: timeoutMs || 15000,
+      signal,
+      retry: false,
+    });
+    const text = await readResText(res);
+    return { status: res.status, text };
+  }
+
+  /** 把列模型 HTTP 状态映射为 listModels 的 reason。 */
+  _classifyListStatus(status) {
+    if (status === 200) return 'ok';
+    if (status === 404 || status === 405) return 'not_found';
+    if (status === 401 || status === 403) return 'auth';
+    return 'unsupported';
+  }
+
+  /** 从 OpenAI 兼容 /models 响应提取模型 id（trim、去重、只取字符串）。 */
+  _parseOpenAIModelIds(json) {
+    const arr = (json && Array.isArray(json.data)) ? json.data : [];
+    const seen = new Set();
+    const out = [];
+    for (const it of arr) {
+      const id = it && typeof it.id === 'string' ? it.id.trim() : '';
+      if (id && !seen.has(id)) { seen.add(id); out.push(id); }
+    }
+    return out;
+  }
+
+  /**
+   * OpenAI 兼容系（openai/deepseek/qwen/zhipu/doubao/kimi/custom）共用：
+   * GET {base}/models（Bearer），解析 data[].id。
+   * @param {{apiKey:string, baseUrl?:string, defaultBase:string, timeoutMs?:number,
+   *          signal?:AbortSignal, transport?:Function}} opts
+   */
+  async _openAIListModels({ apiKey, baseUrl, defaultBase, timeoutMs, signal, transport } = {}) {
+    if (!apiKey) return { supported: false, reason: 'no_credential' };
+    const base = String(baseUrl || defaultBase || '').replace(/\/+$/, '');
+    if (!base) return { supported: false, reason: 'no_credential' };
+    const url = `${base}/models`;
+    try {
+      const { status, text } = await this._doListRequest(url, {
+        headers: { Authorization: 'Bearer ' + apiKey },
+        timeoutMs, signal, transport,
+      });
+      if (status === 200) {
+        let json = null;
+        try { json = JSON.parse(text); } catch { json = null; }
+        return { supported: true, models: this._parseOpenAIModelIds(json) };
+      }
+      const reason = this._classifyListStatus(status);
+      return { supported: false, reason, status };
+    } catch (e) {
+      // 网络/超时/取消：优雅降级，不拖垮整次发现
+      return { supported: false, reason: 'network', status: null, error: String((e && e.message) || e) };
+    }
   }
 }
 

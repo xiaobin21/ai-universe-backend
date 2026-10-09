@@ -96,3 +96,23 @@ services:
       #   sync: false
       # - key: KIMI_API_KEY
       #   sync: false
+
+# ============================================================
+# 【可选】Render Cron Job：定时唤醒 web 实例跑一次模型目录同步。
+# 默认注释掉，不影响 web/postgres 主流程；启用步骤：
+#   1) 取消本块注释；
+#   2) 在 web 服务环境变量里设置 CRON_SECRET（与下方一致）；
+#   3) 把 WEB_URL 改成你的 web 服务真实域名。
+# 说明：免费 web 实例休眠期间进程内 interval 不运行；这个 Cron 由 Render 外部定时触发，
+#       会顺带冷启动实例。端点用 X-Cron-Secret 头鉴权，CRON_SECRET 未配置时返回 503。
+# ============================================================
+# cronJobs:
+#   - name: ai-universe-catalog-sync
+#     schedule: "0 6 * * *"   # 每天 06:00 UTC
+#     runtime: docker
+#     dockerfilePath: ./Dockerfile
+#     dockerContext: .
+#     command: "curl -fsS -X POST https://ai-universe-web.onrender.com/api/cron/catalog-sync -H 'X-Cron-Secret: ${CRON_SECRET}'"
+#     envVars:
+#       - key: CRON_SECRET
+#         sync: false

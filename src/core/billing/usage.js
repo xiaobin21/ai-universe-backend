@@ -15,13 +15,14 @@ const { estimateTokens } = require('./tokenEstimate');
 
 const MICRO_PER_MTOK = 1_000_000;
 
-/** pg 默认把 BIGINT 返为字符串；统一把数值列转 Number，调用方拿到数字。 */
+/** pg 默认把 BIGINT 返为字符串；统一把数值列转 Number，调用方拿到数字。
+ *  cost_micro 允许 NULL（价格缺失=成本未知），必须保留 null，不得 Number(null)→0。 */
 function normalizeRow(r) {
   return {
     ...r,
     promptTokens: Number(r.promptTokens),
     completionTokens: Number(r.completionTokens),
-    costMicro: Number(r.costMicro),
+    costMicro: r.costMicro == null ? null : Number(r.costMicro),
   };
 }
 
@@ -48,15 +49,19 @@ function costFromPrice({ promptTokens, completionTokens, inputMicroPerMtok, outp
  *          at?: Date|string|number}} args
  */
 async function computeCostMicro({ provider, model, promptTokens, completionTokens, at = new Date() }) {
-  const { getPricing } = require('./pricing'); // 延迟 require 避免循环依赖
-  const price = await getPricing(provider, model, at);
+  const { getPricingOrNull } = require('./pricing'); // 延迟 require 避免循环依赖
+  const price = await getPricingOrNull(provider, model, at);
+  if (!price) {
+    // 无当前价：成本未知（discovered/manual 且管理员尚未补价）。绝不写 0 或假价。
+    return { costMicro: null, inputMicro: 0, outputMicro: 0, currency: null, unknown: true };
+  }
   const res = costFromPrice({
     promptTokens,
     completionTokens,
     inputMicroPerMtok: price.inputMicroPerMtok,
     outputMicroPerMtok: price.outputMicroPerMtok,
   });
-  return { ...res, currency: price.currency };
+  return { ...res, currency: price.currency, unknown: false };
 }
 
 /**
@@ -84,6 +89,11 @@ async function recordUsage({
   currency = 'CNY', usageSource = 'estimated',
   pricedAt = new Date(), idempotencyKey = null,
 }) {
+  // costMicro === null/undefined 表示成本未知（无价），写 NULL，绝不落 0。
+  const costParam = (costMicro === null || costMicro === undefined)
+    ? null
+    : Math.trunc(costMicro);
+  const currencyParam = (costParam === null && currency === null) ? 'CNY' : currency;
   // 幂等去重：同键已记账则直接返回
   if (idempotencyKey) {
     const existing = await query(
@@ -110,8 +120,8 @@ async function recordUsage({
               cost_micro AS "costMicro", currency, usage_source AS "usageSource",
               priced_at AS "pricedAt", idempotency_key AS "idempotencyKey"`,
     [id, userId, jobId, provider, model,
-     Math.trunc(promptTokens), Math.trunc(completionTokens), Math.trunc(costMicro),
-     currency, usageSource, pricedAt, idempotencyKey]
+     Math.trunc(promptTokens), Math.trunc(completionTokens), costParam,
+     currencyParam, usageSource, pricedAt, idempotencyKey]
   );
   return { record: normalizeRow(insert.rows[0]), deduplicated: false };
 }

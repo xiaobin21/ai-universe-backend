@@ -252,7 +252,7 @@ async function revokeAllUserSessions(userId, { exceptSessionId } = {}) {
 
 /** 按 id 加载在线主体（中间件用）。 */
 async function findActiveUserById(userId) {
-  const r = await query('SELECT id, email, tier, disabled_at FROM users WHERE id = $1', [userId]);
+  const r = await query('SELECT id, email, tier, disabled_at, created_at FROM users WHERE id = $1', [userId]);
   return r.rows[0] || null;
 }
 

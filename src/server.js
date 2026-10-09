@@ -29,11 +29,38 @@ async function main() {
     console.log(`[server] listening on :${config.port} (env=${config.env})`);
   });
 
+  // ---- 动态模型目录：启动后短延迟非阻塞跑一次发现（失败只 warn，绝不阻断启动/健康检查）----
+  let intervalHandle = null;
+  if (config.discoveryEnabled) {
+    // eslint-disable-next-line global-require
+    const { defaultCatalogDiscovery } = require('./core/discovery/catalogDiscovery');
+    const boot = async () => {
+      try {
+        const { defaultCatalogDiscovery } = require('./core/discovery/catalogDiscovery');
+        const summary = await defaultCatalogDiscovery().run({ trigger: 'startup', adminUserId: null });
+        console.log(`[catalog] 启动发现完成：added=${summary.totals.added} deprecated=${summary.totals.markedDeprecated} skipped=${summary.totals.skipped}`);
+      } catch (e) {
+        console.warn('[catalog] 启动发现失败（不影响启动）:', e && e.message);
+      }
+    };
+    setTimeout(boot, Math.max(0, config.discoveryStartupDelayMs)).unref();
+
+    const hours = config.discoveryIntervalHours;
+    if (hours && hours > 0) {
+      intervalHandle = setInterval(() => {
+        defaultCatalogDiscovery().run({ trigger: 'interval', adminUserId: null })
+          .catch((e) => console.warn('[catalog] 周期发现失败:', e && e.message));
+      }, hours * 3600 * 1000);
+      intervalHandle.unref();
+    }
+  }
+
   let shuttingDown = false;
   async function shutdown(signal) {
     if (shuttingDown) return;
     shuttingDown = true;
     console.log(`[server] 收到 ${signal}，开始优雅关停…`);
+    if (intervalHandle) clearInterval(intervalHandle);
     server.close(() => console.log('[server] 已停止接收新请求'));
 
     // 等待在跑的流式任务自然落库（这里依赖 SSE 连接随请求断开而收尾）

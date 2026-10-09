@@ -96,10 +96,15 @@ async function seed() {
     // 2) models + capabilities + pricing
     for (const [id, provider, slug, name, ctx, out, flags, inYuan, outYuan] of MODELS) {
       await client.query(
-        `INSERT INTO models(id, provider_id, slug, display_name, is_default)
-         VALUES($1,$2,$3,$4,$5)
-         ON CONFLICT (id) DO UPDATE SET provider_id=EXCLUDED.provider_id, slug=EXCLUDED.slug,
-            display_name=EXCLUDED.display_name, is_default=EXCLUDED.is_default`,
+        `INSERT INTO models(id, provider_id, slug, display_name, is_default,
+                            source, lifecycle, capabilities_verified, first_seen_at, last_seen_at)
+         VALUES($1,$2,$3,$4,$5,'seeded','active',true,now(),now())
+         ON CONFLICT (id) DO UPDATE SET
+            provider_id=EXCLUDED.provider_id, slug=EXCLUDED.slug,
+            display_name=EXCLUDED.display_name, is_default=EXCLUDED.is_default,
+            source='seeded', lifecycle='active', capabilities_verified=true,
+            first_seen_at=COALESCE(models.first_seen_at, now()),
+            last_seen_at=COALESCE(models.last_seen_at, now())`,
         [`mdl_${id}`, provId[provider], slug, name, id === 'gpt-4o-mini']
       );
       await client.query(

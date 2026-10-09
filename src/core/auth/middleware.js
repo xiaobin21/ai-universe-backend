@@ -11,6 +11,7 @@ const jwt = require('jsonwebtoken');
 const { config } = require('../../config');
 const { AppError } = require('../errors');
 const { findActiveUserById } = require('./auth.service');
+const { resolveIsAdmin } = require('./admin');
 
 function parseBearer(req) {
   const h = String((req.headers && req.headers.authorization) || '');
@@ -59,10 +60,12 @@ const optionalAuth = wrap(async (req, res, next) => {
   next();
 });
 
-const requireAdmin = (req, res, next) => {
+const requireAdmin = wrap(async (req, res, next) => {
   if (!req.user) return next(new AppError('auth', '未登录'));
-  if (req.user.tier !== 'admin') return next(new AppError('forbidden', '需要管理员权限'));
+  if (!(await resolveIsAdmin(req.user))) {
+    return next(new AppError('forbidden', '需要管理员权限'));
+  }
   next();
-};
+});
 
 module.exports = { requireAuth, requireAdmin, optionalAuth, parseBearer, loadPrincipal };

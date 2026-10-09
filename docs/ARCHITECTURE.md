@@ -240,3 +240,29 @@ autoSelect：取得分最高者
 2. 海外节点与国内供应商互访可能慢，建议新加坡区域。
 3. 真实联网搜索/工具执行需对应 Key 或后端工具能力；多模型协作列为后续。
 4. 价格为近似参考，实际以供应商账单为准；demo 内容为占位，不代表真实模型能力。
+
+---
+
+## 14. 动态模型目录：自动发现 + 自动停用
+
+详见 `docs/DISCOVERY_CONTRACT.md`（冻结契约）。要点：
+
+- **模型来源/生命周期**：`models.source`（seeded 人工策展 / discovered 接口发现 / manual 手工）、
+  `models.lifecycle`（active / deprecated / hidden），以及 `first_seen_at / last_seen_at /
+  last_checked_at / capabilities_verified / deprecation_reason / miss_count`（迁移 003）。
+- **列模型能力 `listModels()`**：OpenAI 兼容系 `GET {base}/models` 取 `data[].id`；Gemini
+  `GET {base}/v1beta/models` 取 `models[].name` 去前缀 `models/`；**Anthropic 无公开列模型接口，恒不支持**，
+  保留种子目录。404/405/401/网络错误一律优雅降级为「该供应商不支持/无凭证」，不拖垮整次发现。
+- **发现需要 Key**：手动触发优先该管理员已保存的解密凭证，其次平台共享 Key；启动/周期/cron **只用平台 Key**，
+  绝不读取普通用户凭证。无任何可用 Key 时所有供应商安全跳过，整体成功不报错。
+- **diff 与停用**：新 id 插入 discovered 行（保守能力，**不写价格**）；已存在更新 `last_seen_at`；
+  seeded/manual 未列出不停用；discovered 连续 `CATALOG_DEPRECATE_AFTER_MISSES`（默认 2）次未列出才 deprecated。
+- **健康探测**：仅对有 Key 供应商的 active 模型发最小请求（"hi"，`max_tokens=1`）。**只有** HTTP 404 或
+  命中退役关键词的 400 才停用；401/402/403/429/5xx/超时一律保持 active，仅更新 `last_checked_at`。
+  探测会消耗**极少量 token**，用平台/管理员 Key，**不计入普通用户账单**。停用可逆（管理员 PATCH 改回 active）。
+- **触发**：listen 后短延迟非阻塞跑一次（不阻断启动/健康检查）；进程内 `setInterval`（默认 24h，可配 0 关闭）。
+  **免费实例休眠期间 interval 不运行，唤醒后不补跑**；`render.yaml` 提供**可选** Render Cron Job
+  （`POST /api/cron/catalog-sync`，`X-Cron-Secret` 签名；`CRON_SECRET` 未配置返回 503）作为外部兜底。
+- **成本未知 = NULL**：discovered 模型在管理员补 `pricing_versions` 前 `usage_records.cost_micro = NULL`
+  （不是 0）；token 照常记录，前端据此显示「费用待核算」。
+

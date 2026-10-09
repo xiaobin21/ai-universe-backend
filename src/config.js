@@ -55,7 +55,61 @@ const config = {
 
   get adminBootstrapEmail() { return str(process.env.ADMIN_BOOTSTRAP_EMAIL); },
   get globalReadonly() { return bool(process.env.GLOBAL_READONLY, false); },
+
+  // ---- 动态模型目录：管理员判定 / 发现 / 探测 / Cron ----
+  /** ADMIN_EMAILS 逗号分隔；命中即管理员（统一小写比较）。 */
+  get adminEmails() {
+    return str(process.env.ADMIN_EMAILS)
+      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  },
+  get cronSecret() { return str(process.env.CRON_SECRET); },
+
+  get discoveryEnabled() { return bool(process.env.CATALOG_DISCOVERY_ENABLED, true); },
+  get discoveryStartupDelayMs() { return int(process.env.CATALOG_DISCOVERY_STARTUP_DELAY_MS, 8000); },
+  /** 周期发现间隔（小时），默认 24；设 0 关闭周期任务（免费实例仅在存活期间运行）。 */
+  get discoveryIntervalHours() {
+    return process.env.CATALOG_DISCOVERY_INTERVAL_HOURS === undefined
+      ? 24 : int(process.env.CATALOG_DISCOVERY_INTERVAL_HOURS, 24);
+  },
+  get discoveryTimeoutMs() { return int(process.env.CATALOG_DISCOVERY_TIMEOUT_MS, 15000); },
+  get discoveryDeprecateAfterMisses() { return int(process.env.CATALOG_DEPRECATE_AFTER_MISSES, 2); },
+  get modelProbeEnabled() { return bool(process.env.MODEL_PROBE_ENABLED, true); },
+  get modelProbeConcurrency() { return int(process.env.MODEL_PROBE_CONCURRENCY, 3); },
 };
+
+/**
+ * 平台共享 Key（环境变量）。每个供应商对应若干候选变量名，按序取第一个非空。
+ * 注意：这是平台级 Key；用户私有凭证在 provider_credentials，由发现服务按规则选择。
+ */
+const PLATFORM_KEY_ENV = {
+  openai: ['OPENAI_API_KEY'],
+  anthropic: ['ANTHROPIC_API_KEY'],
+  gemini: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
+  deepseek: ['DEEPSEEK_API_KEY'],
+  qwen: ['QWEN_API_KEY', 'DASHSCOPE_API_KEY'],
+  zhipu: ['ZHIPU_API_KEY', 'GLM_API_KEY'],
+  doubao: ['DOUBAO_API_KEY', 'ARK_API_KEY'],
+  kimi: ['KIMI_API_KEY', 'MOONSHOT_API_KEY'],
+};
+
+function getPlatformKey(provider) {
+  const names = PLATFORM_KEY_ENV[provider] || [];
+  for (const n of names) {
+    if (process.env[n]) return String(process.env[n]);
+  }
+  return null;
+}
+
+/** 平台自定义 Base URL（可选，多数供应商用适配器默认）。 */
+const PLATFORM_BASE_ENV = {
+  openai: 'OPENAI_BASE_URL', anthropic: 'ANTHROPIC_BASE_URL', gemini: 'GEMINI_BASE_URL',
+  deepseek: 'DEEPSEEK_BASE_URL', qwen: 'QWEN_BASE_URL', zhipu: 'ZHIPU_BASE_URL',
+  doubao: 'DOUBAO_BASE_URL', kimi: 'KIMI_BASE_URL',
+};
+function getPlatformBaseUrl(provider) {
+  const n = PLATFORM_BASE_ENV[provider];
+  return n && process.env[n] ? String(process.env[n]) : null;
+}
 
 /**
  * 生产启动前强制校验；缺失项抛错并列出名字。本地/测试可放宽。
@@ -71,4 +125,4 @@ function assertProductionConfig() {
   }
 }
 
-module.exports = { config, assertProductionConfig };
+module.exports = { config, assertProductionConfig, getPlatformKey, getPlatformBaseUrl };

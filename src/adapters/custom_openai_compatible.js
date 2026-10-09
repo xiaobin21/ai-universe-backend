@@ -64,6 +64,18 @@ class CustomOpenAICompatibleAdapter extends BaseModelAdapter {
     };
   }
 
+  /** 列模型（契约 §2）：GET {base}/models，解析 data[].id。 */
+  async listModels(opts = {}) {
+    return this._openAIListModels({
+      apiKey: opts.apiKey || this._apiKey,
+      baseUrl: opts.baseUrl || this._baseUrl,
+      defaultBase: this._baseUrl,
+      timeoutMs: opts.timeoutMs,
+      signal: opts.signal,
+      transport: opts.transport,
+    });
+  }
+
   /**
    * ChatRequest -> { url, headers, body }
    * 使用构造时传入的 baseUrl 和 apiKey。

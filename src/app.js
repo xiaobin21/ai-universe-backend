@@ -25,6 +25,7 @@ const buildUsageRouter = require('./routes/usage.routes');
 const buildSettingsRouter = require('./routes/settings.routes');
 const buildCatalogRouter = require('./routes/catalog.routes');
 const buildAdminRouter = require('./routes/admin.routes');
+const buildCronRouter = require('./routes/cron.routes');
 
 function createApp() {
   const app = express();
@@ -82,6 +83,7 @@ function createApp() {
   app.use('/api/settings', buildSettingsRouter());
   app.use('/api/catalog', buildCatalogRouter());
   app.use('/api/admin', buildAdminRouter());
+  app.use('/api/cron', buildCronRouter());
 
   // ---- 健康检查（无需认证）----
   app.get('/healthz', (req, res) => res.json({ status: 'ok' }));

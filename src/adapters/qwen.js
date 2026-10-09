@@ -129,6 +129,11 @@ class QwenAdapter extends BaseModelAdapter {
     };
   }
 
+  /** 列模型（契约 §2）：GET {base}/models，解析 data[].id。 */
+  async listModels(opts = {}) {
+    return this._openAIListModels({ ...opts, defaultBase: DEFAULT_BASE });
+  }
+
   buildRequest(req) {
     const baseUrl = (req.baseUrl || DEFAULT_BASE).replace(/\/+$/, '');
     const body = {

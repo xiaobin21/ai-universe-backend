@@ -313,6 +313,25 @@
 | POST `/users/:id/enable` | 启用用户 |
 | POST `/readonly` | 切换全局只读（紧急停用写操作） |
 | GET `/readonly` | 查询只读状态 `{readonly}` |
+| POST `/catalog/sync` | 跑一次模型目录发现（body `{probe?:bool}`）；非管理员一律 403 |
+| POST `/catalog/probe` | 跑一次健康探测（消耗极少量 token，不向用户计费） |
+| GET `/catalog/status` | 最近发现/探测、新发现、已停用、待补价清单 |
+| PATCH `/models/:id` | 改生命周期/能力/上下文/价格；`lifecycle='active'` 即重新启用 |
+
+管理员判定（不引入角色表）：命中 `ADMIN_EMAILS` 名单、或 `tier='admin'`、或未配置名单时的首个注册用户。
+
+**`POST /catalog/sync`** 响应含 `discovery` 汇总（各供应商 queried/added/seen/markedDeprecated/skipped）与可选 `probe` 汇总。
+**`PATCH /models/:id`**（字段均可选）：`lifecycle`、`deprecationReason`、`capabilities`（JSON 合并）、
+`contextWindow`、`maxOutputTokens`、`capabilitiesVerified`、`displayName`、
+`pricing`（`{inputMicroPerMtok, outputMicroPerMtok, currency}`，对当前价 upsert）。补价前 discovered 模型成本为 NULL。
+
+### Cron `/api/cron`（公开但需签名，不走管理员鉴权）
+
+| 方法/路径 | 说明 |
+|---|---|
+| POST `/catalog-sync` | 头 `X-Cron-Secret: <CRON_SECRET>`；未配置 `CRON_SECRET` 返回 **503**，签名错误 401。body `{probe?:bool}` |
+
+该端点由 Render Cron Job（可选，见 `render.yaml`）定时调用，使用平台 Key 发现，不读取任何用户凭证。
 
 ---
 

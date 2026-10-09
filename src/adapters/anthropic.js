@@ -46,6 +46,14 @@ class AnthropicAdapter extends BaseModelAdapter {
     };
   }
 
+  /**
+   * 列模型（契约 §2）：Anthropic 无公开列模型接口，恒不支持。
+   * 保留种子目录，发现阶段跳过。
+   */
+  async listModels() {
+    return { supported: false, reason: 'unsupported' };
+  }
+
   /** 内部 ChatRequest -> { url, headers, body } */
   buildRequest(req) {
     const apiKey = req.apiKey || (req.credentials && req.credentials.apiKey);

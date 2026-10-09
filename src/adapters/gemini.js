@@ -45,6 +45,39 @@ class GeminiAdapter extends BaseModelAdapter {
     };
   }
 
+  /**
+   * 列模型（契约 §2）：GET {base}/v1beta/models?key=，
+   * 解析 models[].name 并去掉前缀 "models/"。
+   */
+  async listModels({ apiKey, baseUrl, timeoutMs, signal, transport } = {}) {
+    if (!apiKey) return { supported: false, reason: 'no_credential' };
+    const base = String(baseUrl || DEFAULT_BASE).replace(/\/+$/, '');
+    const url = `${base}/v1beta/models?key=${encodeURIComponent(apiKey)}&pageSize=1000`;
+    try {
+      const { status, text } = await this._doListRequest(url, {
+        headers: {}, timeoutMs, signal, transport,
+      });
+      if (status === 200) {
+        let json = null;
+        try { json = JSON.parse(text); } catch { json = null; }
+        const names = (json && Array.isArray(json.models)) ? json.models : [];
+        const seen = new Set();
+        const out = [];
+        for (const m of names) {
+          let n = m && typeof m.name === 'string' ? m.name.trim() : '';
+          if (!n) continue;
+          if (n.startsWith('models/')) n = n.slice('models/'.length);
+          if (n && !seen.has(n)) { seen.add(n); out.push(n); }
+        }
+        return { supported: true, models: out };
+      }
+      const reason = this._classifyListStatus(status);
+      return { supported: false, reason, status };
+    } catch (e) {
+      return { supported: false, reason: 'network', status: null, error: String((e && e.message) || e) };
+    }
+  }
+
   /** 内部 ChatRequest -> { url, headers, body } */
   buildRequest(req) {
     const apiKey = req.apiKey || (req.credentials && req.credentials.apiKey);
