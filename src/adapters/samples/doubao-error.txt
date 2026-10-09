@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-err1","object":"chat.completion.chunk","created":1730000002,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"content":"正在处理..."},"finish_reason":null}]}
+
+data: {"error":{"message":"The model experienced a server error","type":"server_error","code":"500"}}
+
+data: [DONE]

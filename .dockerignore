@@ -1,0 +1,38 @@
+# 依赖与构建产物
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# 环境变量：真实 .env 绝不打进镜像（生产密钥由平台 Secret 注入）
+.env
+.env.*
+!.env.example
+
+# Git / CI
+.git/
+.gitignore
+.github/
+
+# 测试与文档（镜像内不需要）
+test/
+coverage/
+.nyc_output/
+docs/
+*.md
+!README.md
+
+# 运行时
+*.log
+logs/
+run/
+tmp/
+.tmp/
+
+# 系统 / 编辑器
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# 本地编排文件本身
+docker-compose.yml

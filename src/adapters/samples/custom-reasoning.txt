@@ -1,0 +1,7 @@
+data: {"id":"chatcmpl-custom-reason","object":"chat.completion.chunk","created":1730000006,"model":"custom-reasoner","choices":[{"index":0,"delta":{"reasoning_content":"Let me think step by step"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-custom-reason","object":"chat.completion.chunk","created":1730000006,"model":"custom-reasoner","choices":[{"index":0,"delta":{"reasoning_content":"First, analyze the problem"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-custom-reason","object":"chat.completion.chunk","created":1730000006,"model":"custom-reasoner","choices":[{"index":0,"delta":{"content":"The answer is 42."},"finish_reason":null}]}
+
+data: [DONE]

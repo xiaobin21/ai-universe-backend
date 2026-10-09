@@ -1,0 +1,13 @@
+data: {"id":"chatcmpl-glm-001","object":"chat.completion.chunk","created":1700001001,"model":"glm-4-plus","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm-001","object":"chat.completion.chunk","created":1700001002,"model":"glm-4-plus","choices":[{"index":0,"delta":{"reasoning":"分析用户意图：用户想了解这个概念"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm-001","object":"chat.completion.chunk","created":1700001003,"model":"glm-4-plus","choices":[{"index":0,"delta":{"reasoning":"需要从多个角度解释"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm-001","object":"chat.completion.chunk","created":1700001004,"model":"glm-4-plus","choices":[{"index":0,"delta":{"content":"好的，"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm-001","object":"chat.completion.chunk","created":1700001005,"model":"glm-4-plus","choices":[{"index":0,"delta":{"content":"我来详细解释一下。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm-001","object":"chat.completion.chunk","created":1700001006,"model":"glm-4-plus","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":20,"completion_tokens":15,"total_tokens":35,"prompt_tokens_details":{"cached_tokens":0}}}
+
+data: [DONE]

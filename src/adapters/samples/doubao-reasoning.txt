@@ -1,0 +1,11 @@
+data: {"id":"chatcmpl-reason1","object":"chat.completion.chunk","created":1730000001,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"role":"assistant","reasoning":"用户问的是数学题，需要先分析解题思路"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reason1","object":"chat.completion.chunk","created":1730000001,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"reasoning":"先列方程，再求解"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reason1","object":"chat.completion.chunk","created":1730000001,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"content":"好的，我们来解这道题。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reason1","object":"chat.completion.chunk","created":1730000001,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"content":"设 x = 2，代入得..."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reason1","object":"chat.completion.chunk","created":1730000001,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]

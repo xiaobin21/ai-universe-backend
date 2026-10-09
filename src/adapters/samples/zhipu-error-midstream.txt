@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-glm-err-001","object":"chat.completion.chunk","created":1700001100,"model":"glm-4-plus","choices":[{"index":0,"delta":{"content":"正在处理"},"finish_reason":null}]}
+
+data: {"error":{"message":"Invalid API key provided.","code":"1301","type":"authentication_error"}}
+
+data: [DONE]

@@ -1,0 +1,35 @@
+{
+  "name": "ai-universe-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Universe 多模型 AI 助手 —— 完整产品后端（Node.js + Express + PostgreSQL，Render 一键部署）",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js",
+    "test": "node --test test/*.test.js test/adapters/*.test.js test/integration/*.test.js",
+    "test:unit": "node --test test/*.test.js test/adapters/*.test.js",
+    "test:integration": "node --test test/integration/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1",
+    "undici": "^6.21.0"
+  },
+  "devDependencies": {
+    "embedded-postgres": "^18.4.0-beta.17"
+  }
+}

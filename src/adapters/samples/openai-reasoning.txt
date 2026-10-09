@@ -1,0 +1,9 @@
+data: {"id":"chatcmpl-reason","choices":[{"index":0,"delta":{"reasoning_content":"Let me reason step by step."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reason","choices":[{"index":0,"delta":{"reasoning_content":"The answer is 42."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reason","choices":[{"index":0,"delta":{"content":"The result is 42."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reason","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":40,"completion_tokens":12,"total_tokens":52,"completion_tokens_details":{"reasoning_tokens":8}}}
+
+data: [DONE]

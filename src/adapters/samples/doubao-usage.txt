@@ -1,0 +1,7 @@
+data: {"id":"chatcmpl-usage1","object":"chat.completion.chunk","created":1730000003,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-usage1","object":"chat.completion.chunk","created":1730000003,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"content":"测试用量"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-usage1","object":"chat.completion.chunk","created":1730000003,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":15,"completion_tokens":5,"total_tokens":20,"prompt_tokens_details":{"cached_tokens":0}}}
+
+data: [DONE]

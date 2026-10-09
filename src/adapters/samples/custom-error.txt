@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-custom-err","object":"chat.completion.chunk","created":1730000005,"model":"custom-model-7b","choices":[{"index":0,"delta":{"content":"开始生成..."},"finish_reason":null}]}
+
+data: {"error":{"message":"Invalid API key provided","type":"authentication_error","code":"invalid_api_key"}}
+
+data: [DONE]

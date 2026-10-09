@@ -1,0 +1,11 @@
+: heartbeat
+
+data: {"id":"chatcmpl-mix","choices":[{"index":0,"delta":{"content":"ok"},"finish_reason":null}]}
+
+data: not-json-at-all
+
+data:
+
+data: {"id":"chatcmpl-mix","choices":[{"index":0,"delta":{"content":" tail"},"finish_reason":null}]}
+
+data: [DONE]

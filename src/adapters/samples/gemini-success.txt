@@ -1,0 +1,5 @@
+data: {"candidates":[{"content":{"parts":[{"thought":true,"text":"先理解用户问题，再给出结构化回答。"}],"role":"model"}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":1,"totalTokenCount":11}}
+
+data: {"candidates":[{"content":{"parts":[{"text":"你"},{"text":"好，"}],"role":"model"}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":3,"totalTokenCount":13}}
+
+data: {"candidates":[{"content":{"parts":[{"text":"这是 Gemini 的回答。"}],"role":"model"},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":6,"totalTokenCount":16}}

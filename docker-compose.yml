@@ -1,0 +1,56 @@
+# ============================================================
+# AI Universe 后端 —— 本地开发编排
+# 用法：
+#   cp .env.example .env   # 然后填入 MASTER_ENCRYPTION_KEY / JWT_SECRET
+#   docker compose up --build
+#   健康检查： curl http://localhost:8080/healthz
+# ============================================================
+services:
+
+  app:
+    build: .
+    # 本地开发热重载；生产镜像 CMD 已是 node src/server.js
+    command: npm run dev
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: development
+      PORT: "8080"
+      # 指向本编排内的 postgres 服务（覆盖 .env 里的 localhost 连接串）
+      DATABASE_URL: postgres://aiuniverse:aiuniverse@postgres:5432/aiuniverse
+      DB_SSL: "false"
+      # 启动时自动迁移 + 幂等种子
+      RUN_MIGRATE: "true"
+      RUN_SEED: "true"
+      # 其余密钥从同目录 .env 读取（MASTER_ENCRYPTION_KEY / JWT_SECRET 等）
+      # 通过 env_file 注入；上面显式声明的项优先
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # 挂载源码实现热更新；node_modules 保留在镜像内
+      - ./src:/app/src
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aiuniverse
+      POSTGRES_PASSWORD: aiuniverse
+      POSTGRES_DB: aiuniverse
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # 仅暴露到宿主机便于本地 psql 调试；容器间走服务名 postgres:5432
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiuniverse -d aiuniverse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:

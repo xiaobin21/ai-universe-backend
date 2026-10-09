@@ -1,0 +1,9 @@
+data: {"id":"chatcmpl-qwen-vl-001","object":"chat.completion.chunk","created":1700000300,"model":"qwen-vl-plus","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-vl-001","object":"chat.completion.chunk","created":1700000301,"model":"qwen-vl-plus","choices":[{"index":0,"delta":{"content":"这张图片"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-vl-001","object":"chat.completion.chunk","created":1700000302,"model":"qwen-vl-plus","choices":[{"index":0,"delta":{"content":"显示了一座山"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-vl-001","object":"chat.completion.chunk","created":1700000303,"model":"qwen-vl-plus","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":250,"completion_tokens":12,"total_tokens":262}}
+
+data: [DONE]

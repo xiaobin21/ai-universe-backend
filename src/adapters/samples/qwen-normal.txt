@@ -1,0 +1,15 @@
+data: {"id":"chatcmpl-qwen-001","object":"chat.completion.chunk","created":1700000001,"model":"qwen-plus","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-001","object":"chat.completion.chunk","created":1700000002,"model":"qwen-plus","choices":[{"index":0,"delta":{"reasoning_content":"用户问的是一个数学问题，让我先分析一下"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-001","object":"chat.completion.chunk","created":1700000003,"model":"qwen-plus","choices":[{"index":0,"delta":{"reasoning_content":"需要分步骤计算"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-001","object":"chat.completion.chunk","created":1700000004,"model":"qwen-plus","choices":[{"index":0,"delta":{"content":"好的"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-001","object":"chat.completion.chunk","created":1700000005,"model":"qwen-plus","choices":[{"index":0,"delta":{"content":"，让我来解答这个问题。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-001","object":"chat.completion.chunk","created":1700000006,"model":"qwen-plus","choices":[{"index":0,"delta":{"content":"首先，我们需要明确已知条件。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-001","object":"chat.completion.chunk","created":1700000007,"model":"qwen-plus","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":15,"completion_tokens":28,"total_tokens":43,"prompt_tokens_details":{"cached_tokens":0}}}
+
+data: [DONE]

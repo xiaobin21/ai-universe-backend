@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-qwen-err-001","object":"chat.completion.chunk","created":1700000100,"model":"qwen-plus","choices":[{"index":0,"delta":{"content":"正在生成"},"finish_reason":null}]}
+
+data: {"error":{"message":"Throttling: Your request was rate limited. Please retry after some time.","code":"Throttling.User","type":"request_limit"}}
+
+data: [DONE]

@@ -1,0 +1,11 @@
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1730000000,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1730000000,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"content":"你好"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1730000000,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"content":"，我是豆包"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1730000000,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{"content":"，有什么可以帮你的？"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1730000000,"model":"doubao-pro-32k","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]

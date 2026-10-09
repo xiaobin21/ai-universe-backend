@@ -1,0 +1,9 @@
+data: {"id":"chatcmpl-custom1","object":"chat.completion.chunk","created":1730000004,"model":"custom-model-7b","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-custom1","object":"chat.completion.chunk","created":1730000004,"model":"custom-model-7b","choices":[{"index":0,"delta":{"content":"这是自定义模型的回复。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-custom1","object":"chat.completion.chunk","created":1730000004,"model":"custom-model-7b","choices":[{"index":0,"delta":{"content":"支持标准 OpenAI 兼容格式。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-custom1","object":"chat.completion.chunk","created":1730000004,"model":"custom-model-7b","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":12,"total_tokens":22}}
+
+data: [DONE]

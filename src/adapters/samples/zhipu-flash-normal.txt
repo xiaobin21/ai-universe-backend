@@ -1,0 +1,7 @@
+data: {"id":"chatcmpl-glm-flash-001","object":"chat.completion.chunk","created":1700001200,"model":"glm-4-flash","choices":[{"index":0,"delta":{"content":"这是一个简单的"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm-flash-001","object":"chat.completion.chunk","created":1700001201,"model":"glm-4-flash","choices":[{"index":0,"delta":{"content":"回答。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm-flash-001","object":"chat.completion.chunk","created":1700001202,"model":"glm-4-flash","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":8,"completion_tokens":6,"total_tokens":14}}
+
+data: [DONE]

@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-qwen-done-001","object":"chat.completion.chunk","created":1700000200,"model":"qwen-turbo","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-qwen-done-001","object":"chat.completion.chunk","created":1700000201,"model":"qwen-turbo","choices":[{"index":0,"delta":{"content":" world"},"finish_reason":null}]}
+
+data: [DONE]

@@ -1,0 +1,7 @@
+data: {"id":"ds-chat","object":"chat.completion.chunk","created":1700000200,"model":"deepseek-chat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"ds-chat","choices":[{"index":0,"delta":{"content":"DeepSeek Chat V3 回复。"},"finish_reason":null}]}
+
+data: {"id":"ds-chat","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":7,"completion_tokens":6,"total_tokens":13}}
+
+data: [DONE]

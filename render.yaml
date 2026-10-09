@@ -1,0 +1,100 @@
+# ============================================================
+# Render Blueprint —— AI Universe 后端一键部署
+# 文档：https://render.com/docs/blueprint-spec
+# 本文件与代码仓库根目录一起提交，Render 会自动识别。
+#
+# 部署方式二选一：
+#   1) Dashboard → New → Blueprint → 选本仓库（自动读本文件）
+#   2) README 中的「Deploy to Render」按钮链接
+#
+# 注意：runtime 选用 docker，与本地 docker-compose 完全一致的镜像；
+#       Render 的 releaseCommand 仅对原生运行时（node/python/...）生效，
+#       Docker 运行时不支持 releaseCommand，因此迁移改由容器启动时执行
+#       （RUN_MIGRATE=true，migrate.js 幂等可重复执行）。
+# ============================================================
+
+databases:
+  - name: ai-universe-db
+    # Render 托管 PostgreSQL 免费额度政策已收紧（免费库常有短期试用后
+    # 转为付费）。若不想付费，可改用 Neon 免费 Serverless Postgres，
+    # 仅替换下方服务的 DATABASE_URL（fromDatabase → 固定 connectionString），
+    # 其余配置不变。详见 docs/DEPLOY_PLATFORMS.md。
+    plan: free
+    databaseName: aiuniverse
+    user: aiuniverse
+    # region: oregon
+
+services:
+  - type: web
+    name: ai-universe-web
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    # 代码推送后自动部署
+    autoDeploy: true
+    # 免费版休眠：Render 会在 15 分钟无流量后挂起实例，
+    # 下次请求冷启动约 10–30 秒。生产可升 Starter 持续运行。
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        # Render 自动注入 PORT，这里不写死；保留注释说明
+        sync: false
+
+      # ---- 数据库连接：自动从托管 PostgreSQL 注入 ----
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-universe-db
+          property: connectionString
+      - key: DB_SSL
+        value: "auto"
+
+      # ---- 三个必填密钥：平台自动生成、不在仓库落盘 ----
+      # AES-256-GCM 主加密密钥（加密用户的供应商 API Key）
+      - key: MASTER_ENCRYPTION_KEY
+        generateValue: true
+        sync: false
+      # JWT 签名密钥
+      - key: JWT_SECRET
+        generateValue: true
+        sync: false
+      # 密钥逻辑 ID（随密文记录，便于轮换）
+      - key: ENCRYPTION_KEY_ID
+        value: k1
+
+      # ---- 启动行为：容器启动时自动迁移 + 幂等种子 ----
+      - key: RUN_MIGRATE
+        value: "true"
+      - key: RUN_SEED
+        value: "true"
+
+      # ---- 安全 / 滥用保护 ----
+      - key: ALLOW_INSECURE_LOCAL_MODE
+        value: "false"
+      - key: LOCAL_MODEL_MODE
+        value: "false"
+      - key: GLOBAL_READONLY
+        value: "false"
+
+      # ---- 可选：平台级共享供应商 Key（留空则用户自带 Key）----
+      # 取消注释并填入即可由平台统一出账；不填则每个用户在
+      # 前端绑定自己的 Key（服务端 AES-256-GCM 加密存储）。
+      # - key: OPENAI_API_KEY
+      #   sync: false
+      # - key: ANTHROPIC_API_KEY
+      #   sync: false
+      # - key: GEMINI_API_KEY
+      #   sync: false
+      # - key: DEEPSEEK_API_KEY
+      #   sync: false
+      # - key: QWEN_API_KEY
+      #   sync: false
+      # - key: ZHIPU_API_KEY
+      #   sync: false
+      # - key: DOUBAO_API_KEY
+      #   sync: false
+      # - key: KIMI_API_KEY
+      #   sync: false

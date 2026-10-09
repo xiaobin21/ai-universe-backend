@@ -1,0 +1,11 @@
+data: {"id":"chatcmpl-kimi-001","object":"chat.completion.chunk","created":1700002001,"model":"moonshot-v1-8k","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-kimi-001","object":"chat.completion.chunk","created":1700002002,"model":"moonshot-v1-8k","choices":[{"index":0,"delta":{"content":"你好！"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-kimi-001","object":"chat.completion.chunk","created":1700002003,"model":"moonshot-v1-8k","choices":[{"index":0,"delta":{"content":"很高兴为你服务。"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-kimi-001","object":"chat.completion.chunk","created":1700002004,"model":"moonshot-v1-8k","choices":[{"index":0,"delta":{"content":"请问有什么可以帮你的？"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-kimi-001","object":"chat.completion.chunk","created":1700002005,"model":"moonshot-v1-8k","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":20,"total_tokens":32}}
+
+data: [DONE]

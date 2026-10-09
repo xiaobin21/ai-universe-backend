@@ -1,0 +1,9 @@
+data: {"id":"ds-reasoner","object":"chat.completion.chunk","created":1700000100,"model":"deepseek-reasoner","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning_content":"用户问 2+2。先拆解..."},"finish_reason":null}]}
+
+data: {"id":"ds-reasoner","choices":[{"index":0,"delta":{"reasoning_content":"2 加 2 等于 4。"},"finish_reason":null}]}
+
+data: {"id":"ds-reasoner","choices":[{"index":0,"delta":{"content":"2+2=4"},"finish_reason":null}]}
+
+data: {"id":"ds-reasoner","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":18,"completion_tokens":9,"total_tokens":27,"prompt_cache_hit_tokens":5,"prompt_cache_miss_tokens":13}}
+
+data: [DONE]

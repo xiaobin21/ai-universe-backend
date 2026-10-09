@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-kimi-err-001","object":"chat.completion.chunk","created":1700002100,"model":"moonshot-v1-32k","choices":[{"index":0,"delta":{"content":"正在思考"},"finish_reason":null}]}
+
+data: {"error":{"message":"Rate limit exceeded for model moonshot-v1-32k. Please slow down.","code":"rate_limit_exceeded","type":"rate_limit_error"}}
+
+data: [DONE]

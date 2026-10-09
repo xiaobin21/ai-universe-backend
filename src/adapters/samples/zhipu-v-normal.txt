@@ -1,0 +1,9 @@
+data: {"id":"chatcmpl-glm4v-001","object":"chat.completion.chunk","created":1700001300,"model":"glm-4v-plus","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm4v-001","object":"chat.completion.chunk","created":1700001301,"model":"glm-4v-plus","choices":[{"index":0,"delta":{"content":"图片中可以看到"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm4v-001","object":"chat.completion.chunk","created":1700001302,"model":"glm-4v-plus","choices":[{"index":0,"delta":{"content":"一只猫在窗边"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-glm4v-001","object":"chat.completion.chunk","created":1700001303,"model":"glm-4v-plus","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":300,"completion_tokens":10,"total_tokens":310}}
+
+data: [DONE]
