@@ -56,11 +56,9 @@ services:
       # AES-256-GCM 主加密密钥（加密用户的供应商 API Key）
       - key: MASTER_ENCRYPTION_KEY
         generateValue: true
-        sync: false
       # JWT 签名密钥
       - key: JWT_SECRET
         generateValue: true
-        sync: false
       # 密钥逻辑 ID（随密文记录，便于轮换）
       - key: ENCRYPTION_KEY_ID
         value: k1
